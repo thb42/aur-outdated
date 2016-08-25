@@ -1,0 +1,49 @@
+#!/bin/python3
+
+import subprocess, urllib.request, json, ssl, pprint
+
+def getManuallyInstalledPKG():
+    r = subprocess.run(["pacman", "-Qm"], stdout = subprocess.PIPE)
+    list = r.stdout.decode('utf-8').split('\n')
+    try:
+        list.remove('')
+    except KeyError as e:
+        pass
+    return list
+
+def createQueryURL(list = None, type = "info"):
+    query = "/rpc/?v=5&type={0}".format(type)
+    for i in list:
+        it = i.split(' ')
+        query += "&arg[]={0}".format(it[0])
+    return "https://aur.archlinux.org{0}&callback=json".format(query)
+
+
+pkg_installed = getManuallyInstalledPKG()
+aurURL = createQueryURL(pkg_installed)
+
+try:
+    json_string = urllib.request.urlopen(url = aurURL, context = ssl.create_default_context()).read()
+except urllib.URLError as e:
+    print("{0}".format(e))
+    exit(-1)
+
+json_string = json_string.decode("utf-8")
+
+j = json.loads(s = json_string[9:len(json_string)-1])
+
+if len(pkg_installed) != j['resultcount']:
+    print("!!! INFO: Pkg installed: {0} | Pkg in query: {1}\n".format(len(pkg_installed), j['resultcount']))
+
+pkg_installed_dict = dict()
+
+for i in pkg_installed:
+    it = i.split(' ')
+    pkg_name = it[0]
+    pkg_version = it[1]
+    pkg_installed_dict[pkg_name] = pkg_version
+
+results = j['results']
+for i in range(0, j['resultcount']):
+    if results[i]['Version'] > pkg_installed_dict[results[i]['Name']]:
+        print("{0} | installed: {1} latest: {2}".format(results[i]['Name'], pkg_installed_dict[results[i]['Name']], results[i]['Version']))
