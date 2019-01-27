@@ -47,3 +47,5 @@ results = j['results']
 for i in range(0, j['resultcount']):
     if results[i]['Version'] > pkg_installed_dict[results[i]['Name']]:
         print("{0} | installed: {1} latest: {2}".format(results[i]['Name'], pkg_installed_dict[results[i]['Name']], results[i]['Version']))
+    else:
+        print("{0} is up to date!".format(results[i]['Name']))
